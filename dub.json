@@ -1,0 +1,12 @@
+{
+	"name": "slow",
+	"authors": [
+		"Robly"
+	],
+	"dependencies": {
+		"derelict-sdl2": "~>2.1.4"
+	},
+	"description": "A test project",
+	"copyright": "Copyright © 2017, Robly",
+	"license": "proprietary"
+}
