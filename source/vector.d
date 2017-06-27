@@ -37,8 +37,8 @@ struct Vec2 (T) {
 	Vec2!T opBinaryRight(string op) (T scalar) inout { //scalar multiplication
 		static if (op == "*")
 			return Vec2(x*scalar, y*scalar);
-		else static if (op == "/")
-			return Vec2(x/scalar, y/scalar);
-	}
-	
+	}	
 }
+
+
+alias V2f = Vec2!float;
