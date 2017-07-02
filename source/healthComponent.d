@@ -1,12 +1,10 @@
 import derelict.sdl2.sdl;
 
 import std.conv;
+import std.math;
 
 import vector;
-
-const int healthBgColor = 0x008800;
-const int healthColor = 0x00FF00;
-const int healthWidth = 8;
+import constants;
 
 class HealthComponent {
 public:
@@ -19,6 +17,7 @@ public:
 	int health;
 	
 	void render(SDL_Surface *s, V2f pos, V2f size, V2f camera) {
+		
 		SDL_Rect r = {to!int(pos.x + size.x - healthWidth - 1 - camera.x),
 					  to!int(pos.y + size.y - maxHealth - 2 - camera.y),
 					  to!int(healthWidth),

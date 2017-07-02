@@ -42,3 +42,8 @@ struct Vec2 (T) {
 
 
 alias V2f = Vec2!float;
+
+V2f normalizeToLessThan(V2f v, float maxNorm) {
+	if (v.norm() <= maxNorm) return v;
+	return v/v.norm() * maxNorm;
+}

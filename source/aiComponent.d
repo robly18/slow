@@ -4,11 +4,8 @@ import std.conv;
 import vector;
 import entity;
 
-const int cooldownBgColor = 0x880000;
-const int cooldownColor = 0xdd3333;
-const int cooldownWidth = 8;
 
-const float scalingFactor = 0.035;
+import constants;
 
 abstract class AiComponent {
 public:
@@ -22,12 +19,12 @@ public:
 	void render(SDL_Surface *s, V2f pos, V2f size, V2f camera) {
 		
 		SDL_Rect r = {to!int(pos.x + size.x - cooldownWidth - 11 - camera.x),
-					  to!int(pos.y + size.y - to!float(period) * scalingFactor - 2 - camera.y),
+					  to!int(pos.y + size.y - to!float(period) * cooldownBarScalingFactor - 2 - camera.y),
 					  cooldownWidth,
-					  to!int(to!float(period) * scalingFactor)};
+					  to!int(to!float(period) * cooldownBarScalingFactor)};
 		SDL_FillRect(s, &r, cooldownBgColor);
-		r.y += to!int((period - cooldown) * scalingFactor);
-		r.h = to!int(cooldown * scalingFactor);
+		r.y += to!int((period - cooldown) * cooldownBarScalingFactor);
+		r.h = to!int(cooldown * cooldownBarScalingFactor);
 		SDL_FillRect(s, &r, cooldownColor);
 	}
 	
@@ -68,8 +65,8 @@ public:
 		if (delta.norm() < 500) { //Todo add system like player
 			delta.y += 0.4;
 			delta = delta / delta.norm();
-			bullets ~= new Bullet(it.color, it.center(), delta/delta.norm(), it);
-			delta = delta / delta.norm() * -5;
+			bullets ~= new Bullet(it.color, it.center(), delta/delta.norm(), it, 10);
+			delta = bullets[$-1].v * (-1) * it.inv_mass / bullets[$-1].inv_mass;
 			it.v += delta;
 		} else {
 			delta = delta / delta.norm();

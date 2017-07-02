@@ -7,10 +7,7 @@ import std.math;
 import healthComponent;
 import aiComponent;
 
-const int pastImageNo = 100;
-const int pastImageInterval = 1;
-const float bulletVelocity = 250;
-const auto bulletSize = Vec2!float(10, 10);
+import constants;
 
 class Entity { //entity is a rectangle
 public:
@@ -49,9 +46,10 @@ public:
 
 class MovingEntity : Entity {
 public:
-	this (Vec2!float pos_, Vec2!float size_, int color_ = 0, int ghostColor_ = 0xAAAAAA) {
+	this (Vec2!float pos_, Vec2!float size_, int color_ = 0, int ghostColor_ = 0xAAAAAA, float inv_mass_ = 1) {
 		super(pos_, size_, color_);
 		ghostColor = ghostColor_;
+		inv_mass = inv_mass_;
 	}
 	
 	void renderGhosts(SDL_Surface *s, V2f camera) {
@@ -65,6 +63,10 @@ public:
 	
 	void accelerate(Vec2!float a, float dt) {
 		v += a * dt;
+	}
+	
+	void applyForce(Vec2!float f, float dt) {
+		v += f * inv_mass * dt;
 	}
 	
 	void runTime(float dt) {
@@ -104,6 +106,7 @@ public:
 	}
 	
 	Vec2!float v = Vec2!float(0,0);
+	float inv_mass; //inverse of mass; 0 means infinite mass
 	
 	SDL_Rect[pastImageNo] ghostImages;
 	int imageAt = 0;
@@ -112,8 +115,8 @@ public:
 
 class ActiveEntity : MovingEntity {
 public:
-	this (Vec2!float pos_, Vec2!float size_, int color_ = 0, int ghostColor_ = 0xAAAAAA) {
-		super(pos_, size_, color_, ghostColor_);
+	this (Vec2!float pos_, Vec2!float size_, int color_ = 0, int ghostColor_ = 0xAAAAAA, float inv_mass = 1) {
+		super(pos_, size_, color_, ghostColor_, inv_mass);
 	}
 	
 	override void render(SDL_Surface *s, V2f camera) {
@@ -127,7 +130,7 @@ public:
 	}
 	
 	void hitWithBullet(Bullet b) {
-		v += b.v * 5 / bulletVelocity;
+		v += b.v / b.inv_mass * inv_mass;
 		if (health !is null) {
 			health.health--;
 		}
@@ -144,8 +147,8 @@ public:
 
 class Bullet : MovingEntity {
 public:
-	this(int ownerColor_, Vec2!float pos_, Vec2!float dir_, Entity owner_) {
-		super(pos_ - bulletSize/2, bulletSize, 0x111111, 0xb0b0b0);
+	this(int ownerColor_, Vec2!float pos_, Vec2!float dir_, Entity owner_, float inv_mass) {
+		super(pos_ - bulletSize/2, bulletSize, 0x111111, 0xb0b0b0, inv_mass);
 		ownerColor = ownerColor_;
 		owner = owner_;
 		v = dir_ * bulletVelocity;
