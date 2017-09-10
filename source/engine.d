@@ -16,7 +16,7 @@ class Engine {
 	Bullet[] bullets;
 	ActiveEntity[] entities; //todo
 	
-	ActiveEntity player;
+	Player player;
 	
 	int momentsSinceLastTurn = 0;
 	
@@ -35,7 +35,7 @@ class Engine {
 		w = SDL_CreateWindow("hi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_SHOWN);
 		s = SDL_GetWindowSurface(w);
 		
-		player = new ActiveEntity(Vec2!float(280, 40), Vec2!float(20, 20), 0xFF0000, 0xFFAAAA);
+		player = new Player(Vec2!float(280, 40), Vec2!float(20, 20), 0xFF0000, 0xFFAAAA);
 		player.health = new HealthComponent(5);
 		
 		/** level creation and population **/
@@ -73,7 +73,8 @@ class Engine {
 			if (e.type == SDL_QUIT) quit = true;
 			if (e.type == SDL_MOUSEBUTTONDOWN) {
 				if (momentsSinceLastTurn == momentsPerTurn) {
-					shooting = false;
+					//shooting = false;
+					player.attackDirection = V2f(0,0);
 					auto mpos = Vec2!float(e.button.x, e.button.y) + camera;
 					auto com = player.pos + player.size/2;
 					auto delta = mpos - com;
@@ -92,8 +93,10 @@ class Engine {
 						deltat = 0;
 					}
 					if (e.button.button == SDL_BUTTON_LEFT) {
-						shooting = true;
-						target = mpos;
+						/*shooting = true;
+						target = mpos;*/
+						player.attackDirection = delta/delta.norm();
+						player.v = player.attackDirection * 130;
 						momentsSinceLastTurn = 0;
 						deltat = 0;
 					}
@@ -141,12 +144,14 @@ class Engine {
 				auto axis = player.axisOfCollision(se);
 				float coeff = (axis * player.v < 0) ? 1000 : 200;
 				player.accelerate(player.axisOfCollision(se) * coeff, dt);
+				if (axis != V2f(0,0)) player.attackDirection = V2f(0,0);
 				if (axis.y < 0 || (axis.x != 0 && player.v.y >= 0)) turnsSinceGrounded = 0;
 			}
 			foreach (e; entities) {
 				auto axis = player.axisOfCollision(e);
 				float coeff = (axis * player.v < 0) ? 1000 : 200;
 				player.applyForce(player.axisOfCollision(e) * coeff, dt);
+				if (axis != V2f(0,0)) player.attackDirection = V2f(0,0);
 				if (axis.y < 0 || (axis.x != 0 && player.v.y >= 0)) turnsSinceGrounded = 0;
 			}
 			player.recordImage();

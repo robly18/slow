@@ -120,7 +120,7 @@ public:
 	}
 	
 	override void render(SDL_Surface *s, V2f camera) {
-		MovingEntity.render(s, camera);
+		super.render(s, camera);
 		if (health !is null) {
 			health.render(s, pos, size, camera);
 		}
@@ -143,6 +143,25 @@ public:
 	//todo add AI and push components; maybe also shoot later
 	HealthComponent health;
 	AiComponent ai;
+}
+
+class Player : ActiveEntity {
+public:
+	this (Vec2!float pos_, Vec2!float size_, int color_ = 0, int ghostColor_ = 0xAAAAAA, float inv_mass = 1) {
+		super(pos_, size_, color_, ghostColor_, inv_mass);
+		attackDirection = V2f(0,0);
+	}
+	
+	override void render(SDL_Surface *s, V2f camera) {
+		super.render(s, camera);
+		if (attackDirection != V2f(0,0)) {
+			auto apos = center() + attackDirection * 30 - camera;
+			SDL_Rect r = {to!int(apos.x - 5), to!int(apos.y) - 5, 10, 10};
+			SDL_FillRect(s, &r, 0xFF0000);
+		}
+	}
+	
+	V2f attackDirection;
 }
 
 class Bullet : MovingEntity {
