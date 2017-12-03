@@ -6,6 +6,7 @@ import std.math;
 
 import healthComponent;
 import aiComponent;
+import staminaComponent;
 
 import constants;
 
@@ -119,6 +120,11 @@ public:
 		super(pos_, size_, color_, ghostColor_, inv_mass);
 	}
 	
+	int turnsSinceGrounded = 999999; //assuming big enough for all purposes
+	bool canJump() {
+		return turnsSinceGrounded <= groundJumpTime;
+	}
+	
 	override void render(SDL_Surface *s, V2f camera) {
 		super.render(s, camera);
 		if (health !is null) {
@@ -127,22 +133,26 @@ public:
 		if (ai !is null) {
 			ai.render(s, pos, size, camera);
 		}
+		if (stamina !is null) {
+			stamina.render(s, pos, size, camera);
+		}
 	}
 	
 	void hitWithBullet(Bullet b) {
 		v += b.v / b.inv_mass * inv_mass;
 		if (health !is null) {
-			health.health--;
+			health.health-=15;
 		}
 	}
 	
-	void runAi(ActiveEntity player, ref Bullet[] bullets) {
-		if (ai !is null) ai.run(this, player, bullets);
+	void runAi(World world) {
+		if (ai !is null) ai.run(this, world);
 	}
 	
 	//todo add AI and push components; maybe also shoot later
 	HealthComponent health;
 	AiComponent ai;
+	StaminaComponent stamina;
 }
 
 class Player : ActiveEntity {
@@ -155,7 +165,7 @@ public:
 	override void render(SDL_Surface *s, V2f camera) {
 		super.render(s, camera);
 		if (attackDirection != V2f(0,0)) {
-			auto apos = center() + attackDirection * 30 - camera;
+			auto apos = center() + attackDirection * 20 - camera;
 			SDL_Rect r = {to!int(apos.x - 5), to!int(apos.y) - 5, 10, 10};
 			SDL_FillRect(s, &r, 0xFF0000);
 		}

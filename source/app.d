@@ -22,6 +22,7 @@ void main() {
 	
 	while (!engine.quit) {
 		engine.handleEvents();
+		engine.handleInternetEvents();
 		
 		/** Physics simulation and AI running **/
 		engine.tick();
