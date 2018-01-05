@@ -8,7 +8,6 @@ import constants;
 class World {
 public:
 	Entity[] staticEntities;
-	Bullet[] bullets;
 	ActiveEntity[] entities;
 	
 	Player[] players;
@@ -21,37 +20,6 @@ public:
 	}
 	
 	void simulateTick() {
-		int[] removelist;
-		foreach (i, b ; bullets) {
-			if (b.timeTilDeath >= 0) {
-				b.timeTilDeath--;
-				if (b.timeTilDeath == 0) {
-					removelist ~= [i];
-				}
-				b.recordImage();
-				continue;
-			}
-			
-			b.accelerate(g, dt);
-			foreach (Entity se; staticEntities) {
-				if (b.collidesWith(se)) {
-					b.timeTilDeath = pastImageNo;
-					b.v = Vec2!float(0, 0);
-				}
-			}
-			foreach (e; entities) {
-				if (e !is b.owner && b.collidesWith(e)) {
-					if (e.color != b.ownerColor)
-						e.hitWithBullet(b);
-					b.timeTilDeath = pastImageNo;
-					b.v = Vec2!float(0, 0);
-				}
-			}
-			
-			
-			b.recordImage();
-		}
-		
 		foreach (i, ee ; entities) {
 			ee.accelerate(g, dt);
 			ee.turnsSinceGrounded++;
@@ -80,16 +48,8 @@ public:
 			ee.recordImage();
 		}
 		
-		foreach_reverse (i ; removelist) {
-			bullets[i] = bullets[$-1];
-			bullets.length--;
-		}
-		
 		foreach (e ; entities) {
 			e.runTime(dt);
-		}
-		foreach (b ; bullets) {
-			b.runTime(dt);
 		}
 	}
 	
@@ -98,17 +58,18 @@ public:
 		foreach (ActiveEntity e; entities) {
 			e.renderGhosts(s, camera);
 		}
-		foreach (b ; bullets) {
-			b.renderGhosts(s, camera);
-		}
 		foreach (Entity se; staticEntities) {
 			se.render(s, camera);
 		}
 		foreach (ActiveEntity e; entities) {
 			e.render(s, camera);
 		}
-		foreach (Bullet b ; bullets) {
-			b.render(s, camera);
-		}
+	}
+	
+	void renderTaskbar(SDL_Surface *ts, int playerid) {
+		SDL_FillRect(ts, null, 0x333333);
+		Player p = players[playerid];
+		p.stamina.renderTaskbar(ts);
+		p.health.renderTaskbar(ts);
 	}
 }

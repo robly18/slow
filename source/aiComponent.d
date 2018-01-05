@@ -40,7 +40,6 @@ bool actOnPlayerInput(Input input, Player player) {
 	if (input.type == InputType.NOP) return false;
 	
 	import std.stdio;
-	writeln("stamina start: ", player.stamina.ticks);
 	auto mpos = V2f(input.x, input.y);
 	auto com = player.pos + player.size/2;
 	auto delta = mpos - com;
@@ -63,7 +62,6 @@ bool actOnPlayerInput(Input input, Player player) {
 		import std.stdio;
 		writeln("Error! Unknown input type!");
 	}
-	writeln("stamina end: ", player.stamina.ticks);
 	return true;
 }
 

@@ -34,13 +34,13 @@ public:
 			   segInt(pos.y, pos.y + size.y, other.pos.y, other.pos.y + other.size.y);
 	}
 	
-	auto center() {
+	V2f center() {
 		return pos + size/2;
 	}
 	
 
-	Vec2!float pos;
-	Vec2!float size;
+	V2f pos;
+	V2f size;
 	
 	int color;
 }
@@ -138,18 +138,10 @@ public:
 		}
 	}
 	
-	void hitWithBullet(Bullet b) {
-		v += b.v / b.inv_mass * inv_mass;
-		if (health !is null) {
-			health.health-=15;
-		}
-	}
-	
 	void runAi(World world) {
 		if (ai !is null) ai.run(this, world);
 	}
 	
-	//todo add AI and push components; maybe also shoot later
 	HealthComponent health;
 	AiComponent ai;
 	StaminaComponent stamina;
@@ -159,37 +151,5 @@ class Player : ActiveEntity {
 public:
 	this (Vec2!float pos_, Vec2!float size_, int color_ = 0, int ghostColor_ = 0xAAAAAA, float inv_mass = 1) {
 		super(pos_, size_, color_, ghostColor_, inv_mass);
-		attackDirection = V2f(0,0);
 	}
-	
-	override void render(SDL_Surface *s, V2f camera) {
-		super.render(s, camera);
-		if (attackDirection != V2f(0,0)) {
-			auto apos = center() + attackDirection * 20 - camera;
-			SDL_Rect r = {to!int(apos.x - 5), to!int(apos.y) - 5, 10, 10};
-			SDL_FillRect(s, &r, 0xFF0000);
-		}
-	}
-	
-	V2f attackDirection;
-}
-
-class Bullet : MovingEntity {
-public:
-	this(int ownerColor_, Vec2!float pos_, Vec2!float dir_, Entity owner_, float inv_mass) {
-		super(pos_ - bulletSize/2, bulletSize, 0x111111, 0xb0b0b0, inv_mass);
-		ownerColor = ownerColor_;
-		owner = owner_;
-		v = dir_ * bulletVelocity;
-	}
-	
-	override void render(SDL_Surface* s, V2f camera) {
-		if (timeTilDeath == -1) {
-			MovingEntity.render(s, camera);
-		}
-	}
-	
-	int ownerColor;
-	Entity owner;
-	int timeTilDeath = -1;
 }

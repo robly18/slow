@@ -7,6 +7,8 @@ import std.algorithm.comparison;
 import vector;
 import constants;
 
+import bar;
+
 class StaminaComponent {
 public:
 	this(int filledTicks) {
@@ -16,15 +18,26 @@ public:
 	
 	int ticks, maxTicks;
 	
+	invariant {
+		assert(0 <= ticks);
+		assert(ticks <= maxTicks);
+	}
+	
 	void render(SDL_Surface *s, V2f pos, V2f size, V2f camera) {
-		int barWidth = to!int(to!float(maxTicks) * cooldownBarScalingFactor);
+		
 		SDL_Rect r = {to!int(pos.x + size.x/2 - barWidth/2 - camera.x),
 					  to!int(pos.y - cooldownDistance - cooldownHeight - camera.y),
 					  barWidth,
 					  cooldownHeight};
-		SDL_FillRect(s, &r, cooldownBgColor);
-		r.w = to!int(to!float(ticks) * cooldownBarScalingFactor);
-		SDL_FillRect(s, &r, cooldownColor);
+		renderBar(s, r, maxTicks, ticks, cooldownBgColor, cooldownColor, cooldownTicks);
+	}
+	
+	void renderTaskbar(SDL_Surface *ts) {
+		SDL_Rect r = {(screenWidth - taskbarBarWidth)/2,
+					  10 + taskbarHealthHeight,
+					  taskbarBarWidth,
+					  taskbarCooldownHeight};
+		renderBar(ts, r, maxTicks, ticks, cooldownBgColor, cooldownColor, cooldownTicks);
 	}
 	
 	void rest(int moments) {
@@ -33,6 +46,21 @@ public:
 	
 	void tire(int moments) {
 		ticks += moments;
+	}
+	
+	int relativeTicks(int ppm)
+	in {
+		assert(0 < ppm);
+		assert(ppm <= 1000);
+	} do {
+		int moments = (ppm * maxTicks + 999)/1000; //assures the rounding is up
+		assert(0 < moments);
+		assert(moments <= maxTicks);
+		return moments;
+	}
+	
+	void tireRelative(int ppm) {
+		tire(relativeTicks(ppm));
 	}
 	
 	bool tired() {

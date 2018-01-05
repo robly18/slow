@@ -11,10 +11,9 @@ import aiComponent;
 import internetAiComponent;
 import staminaComponent;
 
-import world;
+import action;
 
-import connection;
-import std.socket;
+import world;
 
 import constants;
 
@@ -22,59 +21,31 @@ class Engine {
 	World world = new World;
 	
 	Player player;
-	Player other;
-	
-	int playerid;
+	int playerid = 0;
 	
 	int prevt;
 	float deltat = 0;
 	
-	Connection c;
-	char type;
+	Action selectedAction = new Jump(groundJumpTime, maxJumpVelocity, skipStaminaPpt, 1000);
 	
 	void init() {
-		writeln("Server or client? (s/c)");
-		string inputStr;
-		readf!" %s\n"(inputStr);
-		type = inputStr[0];
-		writeln("Thanks.");
-		if (type == 's') {
-			c = new ServerConnection(new InternetAddress(8080));
-		} else if (type == 'c') {
-			writeln("Please input IP");
-			readf!" %s\n"(inputStr);
-			c = new ClientConnection(new InternetAddress(inputStr, 8080));
-		} else {
-			writeln("Error.");
-		}
-		c.s.blocking(false);
-	
 		DerelictSDL2.load();
 		SDL_Init(SDL_INIT_VIDEO);
 		
 		
-		w = SDL_CreateWindow("hi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight, SDL_WINDOW_SHOWN);
+		w = SDL_CreateWindow("hi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenWidth, screenHeight + taskbarHeight, SDL_WINDOW_SHOWN);
 		s = SDL_GetWindowSurface(w);
+		taskbarsurface = SDL_CreateRGBSurface(0, screenWidth, taskbarHeight, 32, 0,0,0,0);
 		
-		Player server, client;
-		server = new Player(Vec2!float(280, 40), Vec2!float(20, 20), 0xFF0000, 0xFFAAAA, playerInvMass);
-		server.health = new HealthComponent(10);
-		server.stamina = new StaminaComponent(momentsPerTurn);
+		player = new Player(Vec2!float(280, 40), Vec2!float(20, 20), 0xFF0000, 0xFFAAAA, playerInvMass);
+		player.health = new HealthComponent(10);
+		player.stamina = new StaminaComponent(momentsPerTurn);
 		
-		client = new Player(Vec2!float(180, 40), Vec2!float(20, 20), 0x0000FF, 0xAAAAFF, playerInvMass);
-		client.health = new HealthComponent(10);
-		client.stamina = new StaminaComponent(momentsPerTurn);
+		world.entities ~= [player];
+		world.players ~= [player];
 		
-		if (type == 's') {
-			player = server; other = client; playerid = 0;
-		} else {
-			player = client; other = server; playerid = 1;
-		}
-		world.entities ~= [server, client];
-		world.players ~= [server, client];
-		
-		player.ai = new PlayerAiComponent(playerid);
-		other.ai = new InternetAiComponent(c, 1-playerid);
+		player.ai = new PlayerAiComponent(0);
+		//other.ai = new InternetAiComponent(c, 1-playerid);
 		
 		/** level creation and population **/
 		
@@ -101,10 +72,13 @@ class Engine {
 					int x = e.button.x + to!int(camera.x);
 					int y = e.button.y + to!int(camera.y);
 					if (e.button.button == SDL_BUTTON_RIGHT) {
-						Input i = Input(InputType.MOVE, x, y);
+						/*Input i = Input(InputType.MOVE, x, y);
 						actOnPlayerInput(i, world.players[playerid]);
-						c.sendInput(i);
 						player.turnsSinceGrounded = 999999;
+						deltat = 0;*/
+						if (selectedAction.canAct(player, world)) {
+							selectedAction.act(player, world, V2f(x,y));
+						}
 						deltat = 0;
 					}
 				}
@@ -114,7 +88,6 @@ class Engine {
 					if (world.playerTurn() == playerid) {
 						Input i = Input(InputType.SKIP);
 						actOnPlayerInput(i, world.players[playerid]);
-						c.sendInput(i);
 						deltat = 0;
 					}
 				}
@@ -123,10 +96,11 @@ class Engine {
 	}
 	
 	void handleInternetEvents() {
+	/*
 		if (world.playerTurn() != -1 && world.playerTurn() != playerid) {
 			actOnPlayerInput(c.getInput(), world.players[world.playerTurn()]);
 			deltat = 0;
-		}
+		}*/
 	}
 	
 	void tick() {
@@ -147,6 +121,9 @@ class Engine {
 		camera.x = min(camera.x, levelWidth - 800);
 		
 		world.render(s, camera);
+		world.renderTaskbar(taskbarsurface, playerid);
+		SDL_Rect taskbarRect = {0, screenHeight, screenWidth, taskbarHeight};
+		SDL_BlitSurface(taskbarsurface, null, s, &taskbarRect);
 		
 		SDL_Rect marker = {10, 10, 20, 20};
 		SDL_FillRect(s, &marker, player.turnsSinceGrounded <= groundJumpTime ? 0x00FF00 : 0xFF0000);
@@ -160,13 +137,15 @@ class Engine {
 		SDL_GetMouseState(&mouseRect.x, &mouseRect.y);
 		delta.x = to!float(mouseRect.x); delta.y = to!float(mouseRect.y);
 		delta = delta - (player.center() - camera);
-		if (player.canJump())
+		/*if (player.canJump())
 			delta = normalizeToLessThan(delta, maxJumpVelocity * ghostTime);
 		
 		mouseRect.x = to!int(player.center().x + delta.x - camera.x);
 		mouseRect.y = to!int(player.center().y + delta.y - camera.y);
 		mouseRect.x -= 5; mouseRect.y -= 5;
-		SDL_FillRect(s, &mouseRect, 0x666666);
+		SDL_FillRect(s, &mouseRect, 0x666666);*/
+		if (selectedAction.canAct(player, world))
+			selectedAction.renderPreview(s, player, world, delta + player.center(), camera);
 		
 		SDL_UpdateWindowSurface(w);
 	}
@@ -175,7 +154,7 @@ class Engine {
 	V2f camera = V2f(0,0);
 	
 	
-	SDL_Window *w;
-	SDL_Surface *s;
+	SDL_Window* w;
+	SDL_Surface* s, taskbarsurface;
 	bool quit = false;
 }
