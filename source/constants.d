@@ -50,3 +50,7 @@ const int cooldownHeight = 4;
 const int cooldownDistance = 2;
 const int taskbarCooldownHeight = 10;
 const int cooldownTicks = momentsPerSkip;
+
+const int taskbarPredictedCooldownHeight = 5;
+const int predictedCooldownBgColor = 0x662266;
+const int predictedCooldownColor = 0xFF55FF;

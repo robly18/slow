@@ -66,10 +66,11 @@ public:
 		}
 	}
 	
-	void renderTaskbar(SDL_Surface *ts, int playerid) {
+	void renderTaskbar(SDL_Surface *ts, int playerid, int predictedCost) {
 		SDL_FillRect(ts, null, 0x333333);
 		Player p = players[playerid];
 		p.stamina.renderTaskbar(ts);
+		p.stamina.renderSubTaskbar(ts, predictedCost);
 		p.health.renderTaskbar(ts);
 	}
 }

@@ -12,6 +12,7 @@ import internetAiComponent;
 import staminaComponent;
 
 import action;
+import button;
 
 import world;
 
@@ -26,7 +27,12 @@ class Engine {
 	int prevt;
 	float deltat = 0;
 	
-	Action selectedAction = new Jump(groundJumpTime, maxJumpVelocity, skipStaminaPpt, 1000);
+	Action strongJump = new Jump(groundJumpTime, maxJumpImpulse, skipStaminaPpt, 1000);
+	Action weakJump = new Jump(-1, maxJumpImpulse * 0.2, 850, 1000);
+	
+	Action selectedAction;
+	
+	Button[] buttons;
 	
 	void init() {
 		DerelictSDL2.load();
@@ -47,6 +53,8 @@ class Engine {
 		player.ai = new PlayerAiComponent(0);
 		//other.ai = new InternetAiComponent(c, 1-playerid);
 		
+		selectedAction = strongJump;
+		
 		/** level creation and population **/
 		
 		world.staticEntities ~= [new Entity(Vec2!float(0, 240), Vec2!float(300, 10))];
@@ -59,6 +67,8 @@ class Engine {
 		world.staticEntities ~= [new Entity(Vec2!float(0, 0), Vec2!float(50, 600))];
 		world.staticEntities ~= [new Entity(Vec2!float(0, 550), Vec2!float(2000, 50))];
 		world.staticEntities ~= [new Entity(Vec2!float(0, 0), Vec2!float(2000, 20))];
+		
+		buttons ~= [new RectangleButton((){writeln("Hello world!");}, SDL_Rect(0,0,20,20), 0xFFFFFF, 0xCCCCCC)];
 		
 		prevt = SDL_GetTicks();
 	}
@@ -80,6 +90,12 @@ class Engine {
 							selectedAction.act(player, world, V2f(x,y));
 						}
 						deltat = 0;
+					} else if (e.button.button == SDL_BUTTON_LEFT) {
+						foreach (Button b; buttons) {
+							if (b.mouseOver(e.button.x, e.button.y-screenHeight)) { //ugly hack
+								b.act();
+							}
+						}
 					}
 				}
 			}
@@ -90,6 +106,12 @@ class Engine {
 						actOnPlayerInput(i, world.players[playerid]);
 						deltat = 0;
 					}
+				}
+				if (e.key.keysym.sym == SDLK_q) {
+					selectedAction = strongJump;
+				}
+				if (e.key.keysym.sym == SDLK_w) {
+					selectedAction = weakJump;
 				}
 			}
 		}
@@ -121,9 +143,6 @@ class Engine {
 		camera.x = min(camera.x, levelWidth - 800);
 		
 		world.render(s, camera);
-		world.renderTaskbar(taskbarsurface, playerid);
-		SDL_Rect taskbarRect = {0, screenHeight, screenWidth, taskbarHeight};
-		SDL_BlitSurface(taskbarsurface, null, s, &taskbarRect);
 		
 		SDL_Rect marker = {10, 10, 20, 20};
 		SDL_FillRect(s, &marker, player.turnsSinceGrounded <= groundJumpTime ? 0x00FF00 : 0xFF0000);
@@ -132,20 +151,24 @@ class Engine {
 		marker.x = 10 + 25 + 25;
 		SDL_FillRect(s, &marker, player.color);
 		
-		SDL_Rect mouseRect = {0,0,10,10};
+		Vec2!int mpos;
 		V2f delta;
-		SDL_GetMouseState(&mouseRect.x, &mouseRect.y);
-		delta.x = to!float(mouseRect.x); delta.y = to!float(mouseRect.y);
+		SDL_GetMouseState(&mpos.x, &mpos.y);
+		delta.x = to!float(mpos.x); delta.y = to!float(mpos.y);
 		delta = delta - (player.center() - camera);
-		/*if (player.canJump())
-			delta = normalizeToLessThan(delta, maxJumpVelocity * ghostTime);
 		
-		mouseRect.x = to!int(player.center().x + delta.x - camera.x);
-		mouseRect.y = to!int(player.center().y + delta.y - camera.y);
-		mouseRect.x -= 5; mouseRect.y -= 5;
-		SDL_FillRect(s, &mouseRect, 0x666666);*/
-		if (selectedAction.canAct(player, world))
+		int predictedCost = 0;
+		if (selectedAction.canAct(player, world)) {
 			selectedAction.renderPreview(s, player, world, delta + player.center(), camera);
+			predictedCost = selectedAction.cost(player, world, delta+player.center());
+		}
+		world.renderTaskbar(taskbarsurface, playerid, predictedCost);
+		foreach (Button b; buttons) {
+			b.render(taskbarsurface, mpos.x, mpos.y-screenHeight);
+		}
+		SDL_Rect taskbarRect = {0, screenHeight, screenWidth, taskbarHeight};
+		SDL_BlitSurface(taskbarsurface, null, s, &taskbarRect);
+		
 		
 		SDL_UpdateWindowSurface(w);
 	}

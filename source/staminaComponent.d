@@ -40,26 +40,38 @@ public:
 		renderBar(ts, r, maxTicks, ticks, cooldownBgColor, cooldownColor, cooldownTicks);
 	}
 	
+	void renderSubTaskbar(SDL_Surface *ts, int cost) {
+		SDL_Rect r = {(screenWidth - taskbarBarWidth)/2,
+					  10 + taskbarHealthHeight + taskbarCooldownHeight,
+					  taskbarBarWidth,
+					  taskbarPredictedCooldownHeight};
+		renderBar(ts, r, maxTicks, relativeTicks(cost), predictedCooldownBgColor, predictedCooldownColor, cooldownTicks);
+	}
+	
 	void rest(int moments) {
 		ticks = max(0, ticks-moments);
 	}
 	
 	void tire(int moments) {
+		assert(moments > 0);
 		ticks += moments;
 	}
 	
 	int relativeTicks(int ppm)
 	in {
-		assert(0 < ppm);
+		assert(0 <= ppm);
 		assert(ppm <= 1000);
 	} do {
 		int moments = (ppm * maxTicks + 999)/1000; //assures the rounding is up
-		assert(0 < moments);
+		assert(0 <= moments);
 		assert(moments <= maxTicks);
 		return moments;
 	}
 	
-	void tireRelative(int ppm) {
+	void tireRelative(int ppm) 
+	in {
+		assert(ppm > 0);
+	} do {
 		tire(relativeTicks(ppm));
 	}
 	

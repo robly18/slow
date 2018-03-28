@@ -6,8 +6,10 @@ struct Vec2 (T) {
 		x = xx; y = yy;
 	}
 	
-	float norm() {
-		return sqrt(x*x + y*y);
+	static if (is(T == float)) {
+		float norm() {
+			return sqrt(x*x + y*y);
+		}
 	}
 	
 	auto opOpAssign(string op) (Vec2!T other) {
